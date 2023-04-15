@@ -153,9 +153,9 @@ jobs:
       id: costo
       if: steps.organize.outputs.status == 'success' && env.UPLOAD_COS == 'true' && !cancelled()
       run: |
-        curl -fsSL https://github.com/allyxmiko/auto_build_openwrt/raw/main/cos
-        chmod +x cos
-        curl -fsSL https://assets.allyx.cc/config.yaml
+        wget https://github.com/allyxmiko/auto_build_openwrt/blob/main/cos.zip
+        chmod +x ./cos
+        wget https://assets.allyx.cc/config.yaml
         ./cos -a put -f ${FIRMWARE}
         echo "::set-output name=upload success"
 
