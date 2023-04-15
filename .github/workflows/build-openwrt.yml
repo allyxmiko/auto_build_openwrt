@@ -153,7 +153,8 @@ jobs:
       id: costo
       if: steps.organize.outputs.status == 'success' && env.UPLOAD_COS == 'true' && !cancelled()
       run: |
-        wget https://github.com/allyxmiko/auto_build_openwrt/blob/main/cos.zip
+        wget https://raw.githubusercontent.com/allyxmiko/auto_build_openwrt/main/cos.tar.gz
+        tar -zxvf ./cos.tar.gz
         chmod +x ./cos
         wget https://assets.allyx.cc/config.yaml
         ./cos -a put -f ${FIRMWARE}
