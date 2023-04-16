@@ -159,7 +159,7 @@ jobs:
         tar -zxvf ./cos.tar.gz
         chmod +x ./cos
         wget https://assets.allyx.cc/config.yaml
-        file=openwrt_$(date "+%Y-%m-%d_%H:%M:%S").tar.gz
+        file=openwrt_$(date "+%Y%m%d_%H%M%S").tar.gz
         tar -zcvf $file ${FIRMWARE} 
         ./cos -a put -f $file
         echo "::set-output name=upload success"
