@@ -154,6 +154,7 @@ jobs:
       id: costo
       if: steps.organize.outputs.status == 'success' && env.UPLOAD_COS == 'true' && !cancelled()
       run: |
+        echo ${FIRMWARE}
         wget https://raw.githubusercontent.com/allyxmiko/auto_build_openwrt/main/cos.tar.gz
         tar -zxvf ./cos.tar.gz
         chmod +x ./cos
