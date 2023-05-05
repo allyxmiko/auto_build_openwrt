@@ -155,13 +155,11 @@ jobs:
       if: steps.organize.outputs.status == 'success' && env.UPLOAD_COS == 'true' && !cancelled()
       run: |
         echo ${FIRMWARE}
-        wget https://raw.githubusercontent.com/allyxmiko/auto_build_openwrt/main/cos.tar.gz
-        tar -zxvf ./cos.tar.gz
-        chmod +x ./cos
-        wget https://assets.allyx.cc/config.yaml
+        wget https://github.com/allyxmiko/auto_build_openwrt/raw/main/github_to_cos
+        chmod +x ./github_to_cos
         file=openwrt_$(date "+%Y%m%d_%H%M%S").tar.gz
         tar -zcvf $file ${FIRMWARE} 
-        ./cos -a put -f $file
+        ./github_to_cos -a put -f $file
         echo "::set-output name=upload success"
 
     - name: Upload firmware to WeTransfer
