@@ -158,7 +158,7 @@ jobs:
         wget https://github.com/allyxmiko/auto_build_openwrt/raw/main/github_to_cos
         chmod +x ./github_to_cos
         file=openwrt_$(date "+%Y%m%d_%H%M%S").tar.gz
-        tar -zcvf $file ${FIRMWARE} 
+        tar -zcvf $file -C ${FIRMWARE} . 
         ./github_to_cos -a put -f $file
         echo "::set-output name=upload success"
 
