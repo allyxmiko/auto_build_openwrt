@@ -86,16 +86,15 @@ jobs:
         if: ${{inputs.ssh == true}}
         uses: csexton/debugger-action@master
 
+      - name: 更新仓库 .config 配置
+        if: ${{ inputs.save_config == true && inputs.ssh == true }}
+        run: cp ${{ inputs.repository }}/.config .config
+
       - name: 保存 .config 回仓库
         if: ${{ inputs.save_config == true && inputs.ssh == true }}
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          cp ${{ inputs.repository }}/.config .config
-          git add .config
-          git commit -m "Update .config after build ${{ env.BUILD_DATE }}" || echo "No changes to commit"
-          git push
-
+        uses: stefanzweifel/git-auto-commit-action@v7
+        with:
+          commit_message: "Save updated .config after build"
 
       - name: 运行 Before Build 脚本
         working-directory: ${{ inputs.repository }}
