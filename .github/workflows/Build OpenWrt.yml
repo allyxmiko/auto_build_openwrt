@@ -21,6 +21,10 @@ on:
         description: "上传编译结果到 WebDAV 服务器"
         type: boolean
         default: false
+      save_config:
+        description: "将更新的 .config 保存回仓库"
+        type: boolean
+        default: false
 
 
 jobs:
@@ -81,6 +85,17 @@ jobs:
       - name: 使用 SSH 连接编译环境
         if: ${{inputs.ssh == true}}
         uses: csexton/debugger-action@master
+
+      - name: 保存 .config 回仓库
+        if: ${{ inputs.save_config == true && inputs.ssh == true }}
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          cp ${{ inputs.repository }}/.config .config
+          git add .config
+          git commit -m "Update .config after build ${{ env.BUILD_DATE }}" || echo "No changes to commit"
+          git push
+
 
       - name: 运行 Before Build 脚本
         working-directory: ${{ inputs.repository }}
