@@ -1,0 +1,118 @@
+name: Automated Build OpenWrt Firmware
+
+permissions:
+  contents: write
+
+on:
+  workflow_dispatch:
+    inputs:
+      repository:
+        description: "选择要编译的仓库"
+        type: choice
+        options:
+          - immortalwrt
+          - openwrt
+        default: immortalwrt
+      ssh:
+        description: "使用 SSH 连接到编译环境"
+        type: boolean
+        default: false
+
+
+jobs:
+  build:
+    name: Build OpenWrt Firmware
+    runs-on: ubuntu-24.04
+    steps:
+
+      - name: 清理并扩展构建空间
+        uses: easimon/maximize-build-space@master
+        with:
+          root-reserve-mb: 4096
+          swap-size-mb: 2048
+          remove-dotnet: "true"
+          remove-android: "true"
+          remove-haskell: "true"
+          remove-codeql: "true"
+          remove-docker-images: "true"
+      
+      - name: 克隆当前仓库
+        uses: actions/checkout@v4
+
+      - name: 初始化 OpenWrt 构建环境
+        run: |
+          sudo bash -c 'bash <(curl -s https://build-scripts.immortalwrt.org/init_build_environment.sh)'
+
+      - name: 获取 OpenWrt 最新稳定Tag
+        run: |
+          latest_tag=$(git ls-remote --tags https://github.com/${{ inputs.repository }}/${{ inputs.repository }}.git \
+            | awk -F/ '{print $3}' \
+            | sed 's/\^{}//' \
+            | grep -E '^v?[0-9]+\.[0-9]+(\.[0-9]+)?$' \
+            | sort -V \
+            | tail -n 1)
+
+          echo "Latest tag is: $latest_tag"
+          echo "TAG=$latest_tag" >> $GITHUB_ENV
+
+      - name: 克隆immortalwrt仓库
+        uses: actions/checkout@v4
+        with:
+          repository: "${{ inputs.repository }}/${{ inputs.repository }}"
+          ref: ${{ env.TAG }}
+          path: ${{ inputs.repository }}
+      
+      - name: 运行 Before Feeds 脚本
+        working-directory: ${{ inputs.repository }}
+        run: bash ../before_feeds_script.sh
+
+      - name: 更新并安装 feeds
+        working-directory: ${{ inputs.repository }}
+        run: |
+          ./scripts/feeds update -a && ./scripts/feeds install -a
+          
+      - name: 复制自定义配置文件
+        run: cp -f .config ${{ inputs.repository }}/.config
+
+      - name: 使用 SSH 连接编译环境
+        if: ${{inputs.ssh == true}}
+        uses: csexton/debugger-action@master
+
+      - name: 运行 Before Build 脚本
+        working-directory: ${{ inputs.repository }}
+        run: bash ../before_build_script.sh
+
+      - name: 编译 OpenWrt 固件
+        working-directory: ${{ inputs.repository }}
+        run: make -j$(nproc)
+
+      - name: 设置构建日期
+        run: |
+          BUILD_DATE=$(date +%Y%m%d)
+          echo "BUILD_DATE=$BUILD_DATE" >> $GITHUB_ENV
+          echo "当前构建日期: $BUILD_DATE"
+
+      - name: 打包编译固件
+        working-directory: ${{ inputs.repository }}
+        run: |
+          TAR_NAME="${{ inputs.repository }}_${TAG}_${BUILD_DATE}.tar.gz"
+          tar -C bin -czf "${GITHUB_WORKSPACE}/${TAR_NAME}" targets
+          echo "TAR_NAME=${TAR_NAME}" >> $GITHUB_ENV
+
+      - name: 上传编译结果到 Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.repository }}_targets_${{ env.BUILD_DATE }}
+          path: ${{ env.TAR_NAME }}
+
+      - name: 上传到WebDAV服务器
+        env:
+          DAV_USER: ${{ secrets.DAV_USER }}
+          DAV_PASS: ${{ secrets.DAV_PASS }}
+          DAV_BASE: ${{ secrets.DAV_URL }}
+        run: |
+          echo "上传到WebDav: $TAR_NAME"
+          curl -u "$DAV_USER:$DAV_PASS" -X MKCOL "$DAV_BASE/$BUILD_DATE/" || true
+          curl -u "$DAV_USER:$DAV_PASS" \
+              -T "$TAR_NAME" \
+              "$DAV_BASE/$BUILD_DATE/$TAR_NAME"

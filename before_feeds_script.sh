@@ -1,0 +1,1 @@
+echo 'src-git myself https://github.com/allyxmiko/openwrt_package.git' >> feeds.conf.default
