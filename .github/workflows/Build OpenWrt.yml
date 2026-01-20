@@ -68,19 +68,19 @@ jobs:
         with:
           repository: "${{ inputs.repository }}/${{ inputs.repository }}"
           ref: ${{ env.TAG }}
-          path: ${{ inputs.repository }}
+          path: openwrt
       
       - name: 运行 Before Feeds 脚本
-        working-directory: ${{ inputs.repository }}
+        working-directory: openwrt
         run: bash ../before_feeds_script.sh
 
       - name: 更新并安装 feeds
-        working-directory: ${{ inputs.repository }}
+        working-directory: openwrt
         run: |
           ./scripts/feeds update -a && ./scripts/feeds install -a
           
       - name: 复制自定义配置文件
-        run: cp -f .config ${{ inputs.repository }}/.config
+        run: cp -f .config openwrt/.config
 
       - name: 使用 SSH 连接编译环境
         if: ${{inputs.ssh == true}}
@@ -88,7 +88,7 @@ jobs:
 
       - name: 更新仓库 .config 配置
         if: ${{ inputs.save_config == true && inputs.ssh == true }}
-        run: cp ${{ inputs.repository }}/.config .config
+        run: cp openwrt/.config .config
 
       - name: 保存 .config 回仓库
         if: ${{ inputs.save_config == true && inputs.ssh == true }}
@@ -98,11 +98,11 @@ jobs:
           file_pattern: ".config"
 
       - name: 运行 Before Build 脚本
-        working-directory: ${{ inputs.repository }}
+        working-directory: openwrt
         run: bash ../before_build_script.sh
 
       - name: 编译 OpenWrt 固件
-        working-directory: ${{ inputs.repository }}
+        working-directory: openwrt
         run: make -j$(nproc)
 
       - name: 设置构建日期
@@ -112,7 +112,7 @@ jobs:
           echo "当前构建日期: $BUILD_DATE"
 
       - name: 打包编译固件
-        working-directory: ${{ inputs.repository }}
+        working-directory: openwrt
         run: |
           TAR_NAME="${{ inputs.repository }}_${TAG}_${BUILD_DATE}.tar.gz"
           tar -C bin -czf "${GITHUB_WORKSPACE}/${TAR_NAME}" targets
