@@ -17,6 +17,10 @@ on:
         description: "使用 SSH 连接到编译环境"
         type: boolean
         default: false
+      webdav:
+        description: "上传编译结果到 WebDAV 服务器"
+        type: boolean
+        default: false
 
 
 jobs:
@@ -55,7 +59,7 @@ jobs:
           echo "Latest tag is: $latest_tag"
           echo "TAG=$latest_tag" >> $GITHUB_ENV
 
-      - name: 克隆immortalwrt仓库
+      - name: 克隆 OpenWrt 仓库
         uses: actions/checkout@v4
         with:
           repository: "${{ inputs.repository }}/${{ inputs.repository }}"
@@ -102,10 +106,11 @@ jobs:
       - name: 上传编译结果到 Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ inputs.repository }}_targets_${{ env.BUILD_DATE }}
+          name: ${{ inputs.repository }}_${{ env.TAG }}_targets_${{ env.BUILD_DATE }}
           path: ${{ env.TAR_NAME }}
 
       - name: 上传到WebDAV服务器
+        if: ${{inputs.webdav == true}}
         env:
           DAV_USER: ${{ secrets.DAV_USER }}
           DAV_PASS: ${{ secrets.DAV_PASS }}
